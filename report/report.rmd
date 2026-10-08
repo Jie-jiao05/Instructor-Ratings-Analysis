@@ -1,0 +1,107 @@
+---
+title: "An Instructor Ratings Analysis: How Relationships Among Ratings and Factors Associated with Teaching Quality Based"
+author: 
+  - Shanjie Jiao
+date: today
+date-format: long
+format:
+  pdf:
+    fig-pos: H
+
+toc: true
+number-sections: true
+---
+
+```{r} 
+#| message: true
+#| warning: true
+#| include: false
+#install.packages("here")
+#install.packages("reshape2")
+library(dplyr)
+library(here)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(reshape2)
+
+data <- read.csv(here("data", "processed", "cleaned.csv"), header = TRUE)
+
+```
+
+# Introduction
+
+Teaching isn’t just about a professor lecturing; it’s also a journey of improvement, guided by feedback from students.  Therefore, student evaluation feedback is highly valued for university to assess teaching quality. However, ratings may be related to various teaching-related factors. This study utilizes student evaluation data from a large American university to explore the relationships among the five rating dimensions and analyze the factors influencing the overall teaching quality of the professor.
+
+# Relationships Among the Ratings
+
+Overall, STEM instructors received the lowest mean ratings across all five dimensions, particularly in easiness (2.87), suggesting that students perceived STEM courses as relatively more difficult and are less satisfied with the quality of the courses. In contrast, Pre-prof instructors received the highest mean ratings in quality, helpfulness, and easiness, but their average student interest rating was relatively low with level of only 3.23. It may suggests that higher instructor quality ratings do not necessarily correspond to greater student interest in the field. 
+
+Notably, the standard deviations were similar across the four disciplines, which suggest students tend to come out with similar conclusion. Moreover, the difference in mean quality across disciplines were relatively small, whereas easiness showed more noticeable variation, it may indicate that the level of difficulty of the subeject content mught vary relativly greater in Pre-profs' subjects.
+
+As shown in @fig-correlation, all five rating dimensions were positively correlated. Quality was strongly associated with helpfulness (r = 0.981) and clarity (r = 0.976), suggesting that these dimensions reflect closely related aspects of teaching evaluations. In contrast, quality showed weaker correlations with easiness (r = 0.565) and student interest (r = 0.471). The associations between these rating dimensions and overall instructor quality will be further examined in the subsequent regression analysis.
+
+```{r}
+#| label: fig-correlation
+#| echo: false
+#| message: false
+#| warning: false
+ratings <- data[, c("quality", "helpfulness", "clarity", "easiness", "raterInterest")]
+
+cor_matrix <- cor(ratings)
+cor_long <- melt(cor_matrix)
+
+# Plot correlation heatmap
+ggplot(cor_long, aes(Var1, Var2, fill = value)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(value, 3)), size = 4) +
+  scale_fill_gradient2(low = "red", mid = "white", high = "steelblue",
+                       midpoint = 0, limits = c(-1, 1)) +
+  labs(title = "Correlation Among Instructor Ratings",
+       x = NULL, y = NULL, fill = "Correlation") +
+  coord_fixed() +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.text.x = element_text(angle = 30, hjust = 1),
+    panel.grid = element_blank()
+  )
+```
+
+
+
+# Model
+
+# Statistical Significance and Practical Importance
+
+# Quality and Discipline
+
+
+\newpage
+
+\appendix
+# Appendix 1
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+library(dplyr)
+library(knitr)
+
+# Select the five rating variables
+ratings <- c("quality", "helpfulness", "clarity", "easiness", "raterInterest")
+
+# Summary statistics by discipline
+discipline_summary <- data %>%
+  group_by(discipline) %>%
+  summarise(
+    N = n(),
+    across(all_of(ratings), ~sprintf("%.2f (%.2f)", mean(.x, na.rm = TRUE), sd(.x, na.rm = TRUE)))
+  )
+
+# Display the table
+kable(discipline_summary,
+      col.names = c("Discipline", "N", "Quality", "Helpfulness", "Clarity", "Easiness", "Rater Interest"),
+      caption = "Instructor Ratings by Discipline (Mean and SD)",
+      align = "lcccccc")
+```
