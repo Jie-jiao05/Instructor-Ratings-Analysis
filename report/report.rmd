@@ -18,12 +18,14 @@ number-sections: true
 #| include: false
 #install.packages("here")
 #install.packages("reshape2")
+#install.packages("car")
 library(dplyr)
 library(here)
 library(tidyr)
 library(ggplot2)
 library(knitr)
 library(reshape2)
+library(car)
 
 data <- read.csv(here("data", "processed", "cleaned.csv"), header = TRUE)
 
@@ -35,9 +37,9 @@ Teaching isn’t just about a professor lecturing; it’s also a journey of impr
 
 # Relationships Among the Ratings
 
-Overall, STEM instructors received the lowest mean ratings across all five dimensions, particularly in easiness (2.87), suggesting that students perceived STEM courses as relatively more difficult and are less satisfied with the quality of the courses. In contrast, Pre-prof instructors received the highest mean ratings in quality, helpfulness, and easiness, but their average student interest rating was relatively low with level of only 3.23. It may suggests that higher instructor quality ratings do not necessarily correspond to greater student interest in the field. 
+Overall, STEM instructors received the lowest mean ratings across all five dimensions, particularly in easiness (2.87), suggesting that students who enrolled in STEM courses have relatively higher difficulty and are less satisfied with the quality of the courses. In contrast, Pre-prof instructors received the highest mean ratings in quality, helpfulness, and easiness, but their average student interest rating was relatively low with level of only 3.23. It may suggests that higher instructor quality ratings do not necessarily correspond to greater student interest in the field. 
 
-Notably, the standard deviations were similar across the four disciplines, which suggest students tend to come out with similar conclusion. Moreover, the difference in mean quality across disciplines were relatively small, whereas easiness showed more noticeable variation, it may indicate that the level of difficulty of the subeject content mught vary relativly greater in Pre-profs' subjects.
+Notably, the standard deviations were similar across the four disciplines, which suggest students tend to come out with similar conclusion. But for easiness, it showed more noticeable variation, which may indicate that the level of difficulty of the subeject tend to be vary.
 
 As shown in @fig-correlation, all five rating dimensions were positively correlated. Quality was strongly associated with helpfulness (r = 0.981) and clarity (r = 0.976), suggesting that these dimensions reflect closely related aspects of teaching evaluations. In contrast, quality showed weaker correlations with easiness (r = 0.565) and student interest (r = 0.471). The associations between these rating dimensions and overall instructor quality will be further examined in the subsequent regression analysis.
 
@@ -54,7 +56,7 @@ cor_long <- melt(cor_matrix)
 # Plot correlation heatmap
 ggplot(cor_long, aes(Var1, Var2, fill = value)) +
   geom_tile(color = "white") +
-  geom_text(aes(label = round(value, 3)), size = 4) +
+  geom_text(aes(label = round(value, 3)), size = 3) +
   scale_fill_gradient2(low = "red", mid = "white", high = "steelblue",
                        midpoint = 0, limits = c(-1, 1)) +
   labs(title = "Correlation Among Instructor Ratings",
@@ -69,10 +71,108 @@ ggplot(cor_long, aes(Var1, Var2, fill = value)) +
 ```
 
 
-
 # Model
+We first examined the distributions of numerical variables using histograms and found that quality was slightly left-skewed, while easiness and raterInterest were relatively symmetric. Besides, numYears showed a strong concentration at its maximum of 11 years. We then used scatterplots to explore their relationships with quality. Both easiness and raterInterest showed generally positive and approximately linear relationships, whereas we do not observe a clear patter between numYears and quality. Based on these observations, we decided to keep the variables on their original scales for the initial regression model(model 1) and further assess their suitability through residual diagnostics.
+
+After performing diagnostic plots, the results suggest that the model1 performs reasonably well, with no major concerns about linearity or normality. Although the Scale-Location plot shows slightly spreaded, but the Breusch-Pagan test found no significant evidence of heteroscedasticity with p = 0.133. We also identified 14 potentially influential observations using Cook's distance, however, sensitivity analysis showed that the main regression coefficients remained relatively stable after excluding them. Meanwhile, the residuals showed no clear pattern across observation order, and VIF values close to 1. So multicollinearity and indepedent are statified. Based on these findings, we decided to retain the original model without further adjustments.
+
+$$
+\begin{aligned}
+Quality_i \mid \mu_i, \sigma
+&\sim \mathrm{Normal}(\mu_i, \sigma) \\[6pt]
+\mu_i
+&= \beta_0
++ \beta_1 \cdot \mathrm{gender}_i
++ \beta_2 \cdot \mathrm{numYears}_i \\
+&\quad + \beta_3 \cdot \mathrm{PreProf}_i
++ \beta_4 \cdot \mathrm{SocSci}_i
++ \beta_5 \cdot \mathrm{STEM}_i \\
+&\quad + \beta_6 \cdot \mathrm{easiness}_i
++ \beta_7 \cdot \mathrm{raterInterest}_i
++ \beta_8 \cdot \mathrm{pepper}_i
+\end{aligned}
+$$
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| include: false
+# Fit the original multiple linear regression model
+model1 <- lm(quality ~ gender + numYears + discipline + easiness + raterInterest + pepper, data = data)
+
+# Check model results
+summary(model1)
+# Check regression assumptions
+par(mfrow = c(2, 2))
+plot(model1)
+par(mfrow = c(1, 1))
+
+plot(residuals(model1),
+     xlab = "Observation Order",
+     ylab = "Residuals",
+     main = "Residuals vs Observation Order")
+abline(h = 0, col = "red")
+
+# Check multicollinearity
+vif(model1)
+
+library(lmtest)
+
+# Test heteroscedasticity
+bptest(model1)
+
+# Check influential observations
+sort(cooks.distance(model1), decreasing = TRUE)[1:10]
+cooks <- cooks.distance(model1)
+which(cooks > 4/nobs(model1))
+
+# Identify potentially influential observations
+influential <- cooks > 4 / nobs(model1)
+
+# Refit model without flagged observations
+model_sensitivity <- lm(
+  formula(model1),
+  data = model.frame(model1)[!influential, ]
+)
+
+# Compare regression coefficients
+round(cbind(
+  Original = coef(model1),
+  Sensitivity = coef(model_sensitivity)
+), 3)
+```
 
 # Statistical Significance and Practical Importance
+As shown in @tbl-regression, easiness, student interest,pepper, and STEM discipline were positively associated with instructor quality after holding for other predictors (all p < 0.001). The most impactable variable is Pepper yes or no, students tend to give a higher rating in the term of any other condition. statistically, Holding other variables constant, a one-point increase in student interest was associated with approximately 0.54 higher quality ratings. Although STEM instructors received the lowest average quality ratings, butfter adjusting for other predictors, STEM instructors were estimated to receive quality ratings approximately 0.30 points higher than Humanities instructors. In contrast, the rest variable showed no statistically significant associations. The confidence intervals for significant predictors excluded zero, which support null hypothesis which they are positively associated. 
+```{r}
+#| label: tbl-regression  # For citation in Quarto
+#| echo: false  # Suppress code in output
+#| warning: false 
+#| message: false
+#| fig-align: center
+library(broom)
+library(dplyr)
+library(knitr)
+
+
+
+# Summarize regression results
+model_table <- tidy(model1, conf.int = TRUE) %>%
+  mutate(
+    across(c(estimate, std.error, conf.low, conf.high), ~round(.x, 3)),
+    CI = sprintf("[%.3f, %.3f]", conf.low, conf.high),
+    p.value = ifelse(p.value < 0.001, "<0.001", sprintf("%.3f", p.value))
+  ) %>%
+  select(term, estimate, std.error, CI, p.value)
+
+# Display regression table
+kable(model_table,
+      col.names = c("Predictor", "Estimate", "SE", "95% CI", "p-value"),
+      caption = "Multiple Linear Regression Results for Instructor Quality",
+      align = "lcccc")
+
+```
 
 # Quality and Discipline
 
@@ -104,4 +204,39 @@ kable(discipline_summary,
       col.names = c("Discipline", "N", "Quality", "Helpfulness", "Clarity", "Easiness", "Rater Interest"),
       caption = "Instructor Ratings by Discipline (Mean and SD)",
       align = "lcccccc")
+```
+
+```{r}
+#histogram
+variables <- c("quality", "numYears", "easiness", "raterInterest")
+dist_data <- data %>%
+  pivot_longer(all_of(variables), names_to = "Variable", values_to = "Value")
+
+# let review distributions
+ggplot(dist_data, aes(x = Value)) +
+  geom_histogram(bins = 20, fill = "black", color = "white") +
+  facet_wrap(~Variable, scales = "free") +
+  labs(title = "Distribution of Numerical Variables", x = "Value", y = "Frequency") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r}
+
+scatter_data <- data[, c("quality", "numYears", "easiness", "raterInterest")]
+
+
+scatter_long <- pivot_longer(scatter_data, -quality,
+                             names_to = "Variable", values_to = "Value")
+
+# Plot relationships with quality
+ggplot(scatter_long, aes(x = Value, y = quality)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  facet_wrap(~Variable, scales = "free_x") +
+  labs(title = "Relationships Between Numerical Predictors and Quality",
+       x = "Predictor Value", y = "Quality") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
 ```
