@@ -1,5 +1,5 @@
 ---
-title: "An Instructor Ratings Analysis: How Relationships Among Ratings and Factors Associated with Teaching Quality Based"
+title: "Factors Associated with Instructor Quality Examination by Using Regression Analysis"
 author: 
   - Shanjie Jiao
 date: today
@@ -7,6 +7,10 @@ date-format: long
 format:
   pdf:
     fig-pos: H
+    include-in-header:
+      text: |
+        \usepackage{setspace}
+        \doublespacing
 
 toc: true
 number-sections: true
@@ -34,17 +38,13 @@ data <- read.csv(here("data", "processed", "cleaned.csv"), header = TRUE)
 
 # Introduction
 
-Universities commonly assess teaching quality through student surveys. However, these evaluations may reflect a range of factors beyond an instructor's teaching ability. This study utilizes student evaluation data from a large American university to explore the relationships among the five rating dimensions.
+Universities commonly assess teaching quality through student surveys. However, these evaluations may reflect a range of factors beyond the instructor's teaching ability. This study utilizes student evaluation data from a large American university to explore the relationships among the five dimensions in R(V.4.5.3).
 
 # Relationships Among the Ratings
 
-Overall, STEM instructors received the lowest mean ratings across all five dimensions, particularly in easiness (2.87), suggesting that STEM students have relatively higher diﬀiculty and are less satisfied with the instructor quality. In contrast, Pre-prof instructors received the highest average ratings, helpfulness, and easiness, but the lower rate for average interest of only 3.23. Thus, instructor quality ratings may not necessarily correspond to greater student interest. 
+Overall, STEM instructors received the lowest average ratings across all five dimensions, especially in easiness, which suggest STEM students have relatively higher diﬀiculty and less satisfied with the teaching quality. In contrast, Pre-prof instructors received the highest average ratings, helpfulness, and easiness, but the lower rate for average interest was only 3.23 which tells that quality ratings may not necessarily correspond to greater interest. Standard deviations were pretty similar across disciplines, but easiness varied a lot more, showing that students had mixed feelings about course difficulty.
 
-
-
-Notably, the standard deviations were similar across the four disciplines, which suggest students tend to come out with similar conclusion. But for easiness, it showed more noticeable variation, which may indicate that the level of difficulty of the subeject tend to be vary.
-
-As shown in @fig-correlation, all five rating dimensions were positively correlated. Quality was strongly associated with helpfulness and clarity. In contrast, quality showed weaker correlations with easiness and raterInterest. The detailed analysis of the correlation will be further explored in the subsequent analysis.
+As shown in @fig-correlation, all five rating dimensions were positively correlated. Quality was strongly associated with helpfulness and clarity. In contrast, quality showed weaker correlations with easiness and raterInterest. These relationships are further explored through regression analysis.
 
 
 ```{r}
@@ -76,10 +76,10 @@ ggplot(cor_long, aes(Var1, Var2, fill = value)) +
 
 
 # Model
-We first examined the distributions of numerical variables using histograms and found that quality was slightly left-skewed, while easiness and raterInterest were relatively symmetric. We then used scatterplots to explore their relationships with quality. Both easiness and raterInterest showed positive and approximately linear relationships, but no clear patten between numYears and quality. Given that quality is a continuous variable, we adopted a Gaussian linear regression, with its assumptions to be assessed through residual diagnostics.
+We first examined the distributions of numerical variables using histograms and found that quality was slightly left-skewed, while easiness and raterInterest were relatively symmetric. We then used scatterplots to explore their relationships with quality. Both easiness and raterInterest showed positive and approximately linear. Given that quality is a continuous variable, we adopted a normal linear regression, and its assumptions to be assessed through residual diagnostics.
 
 
-After performing diagnostic plots, the results suggest that the model performs reasonably well, with no major concerns about linearity or normality. Although the Scale-Location plot shows slightly spreaded, but the Breusch-Pagan test found no significant evidence of heterogeneity with p = 0.133. We also identified 14 potentially influential observations by Cook’s distance, while sensitivity analysis showed stable results after be excluded. Meanwhile, the residuals showed no clear pattern across observations, with VIF≈1. So, multicollinearity and independent are satisfied. Based on these findings, our final model is below.
+After performing diagnostic plots, the results suggest that the model performs reasonably well, with no major concerns about linearity or normality. Although the Scale-Location plot shows slightly spreaded, but the Breusch-Pagan test found no significant evidence of heterogeneity with p = 0.133. We also identified 14 potentially influential observations by Cook’s distance, while sensitivity analysis showed stable results after being excluded. Meanwhile, the residuals showed no clear pattern across observations, with VIF≈1. So, multicollinearity and independent are satisfied. Based on these findings, our final model is below.
 
 
 $$
@@ -149,9 +149,8 @@ round(cbind(
 ), 3)
 ```
 
-# Statistical Significance and Practical Importance
-As shown in @tbl-regression, easiness, student interest, pepper, and STEM discipline were positively associated with instructor quality after holding for other predictors (p < 0.05). The association with pepper was the most noticeable, as instructors treated as attractive received approximately 0.56 points higher in ratings than those who were not, with other variable fixed. And student interest and easiness also showed substantial associations, with each one-point increase corresponding to 0.54 and 0.51 higher in quality rating, respectively. In contrast, gender and numYears do not show statistically significant associations (p > 0.05). The confidence intervals for the significant predictors excluded zero, further supporting these finding of associations.
-
+# Results
+As shown in @tbl-regression, easiness, student interest, pepper, and STEM discipline were positively associated with instructor quality after holding other variables (p < 0.05). The association with pepper was the most noticeable, as instructors treated as attractive received approximately 0.56 points higher in ratings than those who were not, with other variable fixed. And student interest and easiness also showed substantial associations, with each one-point increase corresponding to 0.54 and 0.51 higher in quality rating, respectively. In contrast, gender and numYears do not show statistically significant associations (p > 0.05). The confidence intervals for the significant predictors excluded zero further supports our finding.
 
 
 
@@ -180,13 +179,32 @@ kable(model_table,
 ```
 
 # Quality and Discipline
-Although STEM instructors received the lowest average quality ratings, but after holding other predictors constant the situation changed. The STEM instructors were estimated to receive approximately 0.30 points higher than Humanities instructors. In comparison, neither Pre-Prof nor Social Science showed statistically significant differences from Humanities after adjustment. This reversed result may reflect that the lower quality ratings are more closelyrelated to course easiness and personal interest in STEM courses but not just discipline it self.
-
+Although STEM instructors received the lowest average ratings, but after holding other predictors constant the situation changed. The STEM instructors were estimated to receive approximately 0.30 points higher than Humanities instructors. In comparison, neither Pre-Prof nor Social Science showed statistically significant differences from Humanities after adjustment. This reversed result may reflect that the lower quality ratings are more closely related to course easiness and personal interest in STEM courses but not just discipline itself.
 
 \newpage
 
 \appendix
 # Appendix 1
+
+```{r} 
+#| echo: true
+#| eval: false
+#install.packages("here")
+#install.packages("reshape2")
+#install.packages("car")
+library(dplyr)
+library(here)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+library(reshape2)
+library(car)
+library(broom)
+
+data <- read.csv(here("data", "processed", "cleaned.csv"), header = TRUE)
+
+```
+
 ```{r}
 #| echo: true
 #| eval: false
@@ -345,4 +363,4 @@ kable(model_table,
 ```
 
 # Appendix 2: AI Use Disclosure
-This report used ChatGPT to assist with R coding, data visualization and part of regression diagnostics. Representative prompts included “How should I assess regression assumptions?”, "How should I check the influetial observation and to assess whether we should remove them" and “Help me to create a heatmap for correlation.” AI-generated suggestions were reviewed, modified, and checked against the actual R outputs and the each line of code true meaning before being incorporated into the analysis and report.
+This report used ChatGPT to assist with R coding, data visualization and part of regression diagnostics. Representative prompts included “How should build a table to show the general data?”, "How should I check the influetial observation and to assess whether we should remove them" and “Help me to create a heatmap for correlation.” AI-generated suggestions were reviewed, modified, and checked against the actual R outputs and the each line of code true meaning before being incorporated into the analysis and report.
