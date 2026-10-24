@@ -185,6 +185,28 @@ Although STEM instructors received the lowest average ratings, but after holding
 
 \appendix
 # Appendix 1
+```{r} 
+#| echo: true
+#| eval: false
+#install.packages("here")
+library(tidyverse)
+library(dplyr)
+library(here)
+ 
+raw <- read.csv(here("data", "raw", "Rateprof.csv"), header = TRUE)
+
+# cleaning
+raw$X <- NULL
+
+raw$gender <- ifelse(raw$gender == "male", 1, 0)
+raw$pepper <- ifelse(raw$pepper == "yes", 1, 0)
+raw$discipline <- factor(raw$discipline)
+
+write.csv(raw,
+    "/Users/shanjiejiao/Desktop/Instructor Ratings Analysis/data/processed/cleaned.csv")
+
+```
+
 
 ```{r} 
 #| echo: true
@@ -299,7 +321,8 @@ ggplot(cor_long, aes(Var1, Var2, fill = value)) +
 #| echo: true
 #| eval: false
 
-model1 <- lm(quality ~ gender + numYears + discipline + easiness + raterInterest + pepper, data = data)
+model1 <- lm(quality ~ gender + numYears + discipline + easiness + raterInterest 
++ pepper, data = data)
 summary(model1)
 
 # Test regression assumptions
@@ -354,7 +377,7 @@ model_table <- tidy(model1, conf.int = TRUE) %>%
   ) %>%
   select(term, estimate, std.error, CI, p.value)
 
-# Display regression table
+#   table
 kable(model_table,
       col.names = c("Predictor", "Estimate", "SE", "95% CI", "p-value"),
       caption = "Multiple Linear Regression Results for Instructor Quality",
